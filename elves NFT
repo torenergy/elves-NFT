@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+contract ElvesNFT is ERC721, ERC721URIStorage, Ownable {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
+
+    // Struct to store elf attributes
+    struct Elf {
+        string clan;       // e.g., "Woodland", "High Elf", "Dark Elf"
+        string magicType;  // e.g., "Fire", "Ice", "Nature"
+        uint256 rarity;    // Rarity score (1-100)
+    }
+
+    // Mapping from token ID to Elf data
+    mapping(uint256 => Elf) public elves;
+
+    // Minting price (in wei)
+    uint256 public mintPrice = 0.05 ether;
+
+    // Maximum supply of NFTs
+    uint256 public constant MAX_SUPPLY = 7777; // Thematic number for mystical appeal
+
+    constructor() ERC721("ElvesNFT", "ELVES") Ownable(msg.sender) {}
+
+    // Mint a new Elf NFT
+    function mintElvesNFT(
+        address to,
+        string memory tokenURI,
+        string memory clan,
+        string memory magicType,
+        uint256 rarity
+    ) public payable returns (uint256) {
+        require(msg.value >= mintPrice, "Insufficient ETH sent");
+        require(_tokenIdCounter.current() < MAX_SUPPLY, "Max supply reached");
+        require(rarity >= 1 && rarity <= 100, "Rarity must be between 1 and 100");
+
+        uint256 newTokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+
+        _safeMint(to, newTokenId);
+        _setTokenURI(newTokenId, tokenURI);
+
+        // Store elf attributes
+        elves[newTokenId] = Elf({
+            clan: clan,
+            magicType: magicType,
+            rarity: rarity
+        });
+
+        return newTokenId;
+    }
+
+    // Get elf attributes for a token
+    function getElf(uint256 tokenId) public view returns (Elf memory) {
+        require(_exists(tokenId), "Token does not exist");
+        return elves[tokenId];
+    }
+
+    // Update mint price (only owner)
+    function setMintPrice(uint256 newPrice) public onlyOwner {
+        mintPrice = newPrice;
+    }
+
+    // Withdraw contract balance (only owner)
+    function withdraw() public onlyOwner {
+        uint256 balance = address(this).balance;
+        payable(owner()).transfer(balance);
+    }
+
+    // Override required by ERC721URIStorage
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
+    }
+
+    // Override required by ERC721URIStorage
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+
+    // Override to support ERC721URIStorage
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+}
