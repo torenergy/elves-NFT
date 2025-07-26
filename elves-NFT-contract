@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+contract ElvesNFT is ERC721, ERC721URIStorage, Ownable {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
+
+    // Constructor: Initialize the ERC721 token with name "ElvesNFT" and symbol "ELF"
+    constructor() ERC721("ElvesNFT", "ELF") Ownable(msg.sender) {}
+
+    // Mint a new NFT with a specific token URI (metadata)
+    function mintElf(address to, string memory tokenURI) public onlyOwner returns (uint256) {
+        uint256 newTokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        _safeMint(to, newTokenId);
+        _setTokenURI(newTokenId, tokenURI);
+        return newTokenId;
+    }
+
+    // Override required by ERC721URIStorage
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    // Override required by ERC721URIStorage for burning tokens
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
+    }
+
+    // Burn an NFT (only token owner or approved)
+    function burn(uint256 tokenId) public {
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Caller is not owner nor approved");
+        _burn(tokenId);
+    }
+
+    // Override supportsInterface for ERC721 and ERC721URIStorage
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+}
+
+{
+  "name": "Forest Elf #1",
+  "description": "A mystical elf from the Emerald Clan, wielding arcane magic.",
+  "image": "ipfs://<hash>/elf.png",
+  "attributes": [
+    {"trait_type": "Clan", "value": "Emerald"},
+    {"trait_type": "Magic Type", "value": "Arcane"},
+    {"trait_type": "Weapon", "value": "Mythical Bow"}
+  ]
+}
